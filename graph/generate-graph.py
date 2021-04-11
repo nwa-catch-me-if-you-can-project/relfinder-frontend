@@ -2,6 +2,7 @@ import json
 import faker
 import random
 import argparse
+import randomcolor
 import faker_microservice
 
 parser = argparse.ArgumentParser(description="Generates a mock graph")
@@ -37,7 +38,8 @@ while len(final_edges) < args.edge_count:
     random_edge = {
         "sid": random.choice(nodes_ids),
         "tid": random.choice(nodes_ids),
-        "name": random.choice(properties)
+        "name": random.choice(properties),
+        "_color": "#000000"
     }
 
     json_edge = json.dumps(random_edge)
@@ -46,9 +48,18 @@ while len(final_edges) < args.edge_count:
         edge_set.add(json_edge)
         final_edges.append(random_edge)
 
+rdn_color = randomcolor.RandomColor()
+
+def classes_map(cls):
+    return {
+        "class": cls,
+        "color": rdn_color.generate()[0]
+    }
+
 out_graph = {
     "nodes": nodes,
-    "edges": final_edges
+    "edges": final_edges,
+    "classes": list(map(classes_map, node_classes))
 }
 
 with open(args.out, "w") as out_file:
