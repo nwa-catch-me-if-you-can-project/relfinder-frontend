@@ -56,7 +56,7 @@ export default {
             nodeSize: 30,
             nodeLabels: true,
             linkLabels:true,
-            force: 3000
+            force: 4500
         }
     }
   },
