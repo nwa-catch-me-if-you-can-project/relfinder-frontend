@@ -9,8 +9,8 @@
                     <div class="panel-block">
                         <b-field label="Select Entities" class="entities-tag-input">
                             <b-taginput
-                                v-model="selectedClasses"
-                                :data="filteredClasses"
+                                v-model="selectedEntities"
+                                :data="filteredEntities"
                                 autocomplete
                                 icon="label"
                                 :open-on-focus="true"
@@ -70,9 +70,9 @@ export default {
     },
     data: function () {
         return {
-            classes: [],
-            filteredClasses: [],
-            selectedClasses: [],
+            entities: [],
+            filteredEntities: [],
+            selectedEntities: [],
             graph: {
                 nodes: [],
                 links: []
@@ -87,21 +87,21 @@ export default {
     },
     methods: {
         getFilteredTags (text) {
-            this.filteredClasses = this.classes.filter((option) => {
+            this.filteredEntities = this.entities.filter((option) => {
                 // The option must not have been chosen yet and match the partial
                 // text typed in the input field
-                return !this.selectedClasses.includes(option) && option.toLowerCase().indexOf(text.toLowerCase()) >= 0
+                return !this.selectedEntities.includes(option) && option.toLowerCase().indexOf(text.toLowerCase()) >= 0
             })
         },
         tagListEdited () {
             // When a tag is added/removed filter the allowable tags
             // to the ones not chosen yet
-            this.filteredClasses = this.classes.filter((option) => {
-                return !this.selectedClasses.includes(option)
+            this.filteredEntities = this.entities.filter((option) => {
+                return !this.selectedEntities.includes(option)
             });
         },
         refreshGraph () {
-            let filteredNodes = mockGraph.nodes.filter(node => this.selectedClasses.includes(node.class));
+            let filteredNodes = mockGraph.nodes.filter(node => this.selectedEntities.includes(node.name));
             let filteredNodesIDs = filteredNodes.map(node => node.id);
             let filteredEdges = mockGraph.edges.filter(edge => filteredNodesIDs.includes(edge.sid) && filteredNodesIDs.includes(edge.tid));
 
@@ -111,16 +111,19 @@ export default {
         resetFilters () {
             this.graph.nodes = mockGraph.nodes;
             this.graph.links = mockGraph.edges;
+        },
+        entitiesFromGraph(graph) {
+            return graph.nodes.map(x => x.name);
         }
     },
     mounted: function () {
         this.classesData = {};
-        this.classes = mockGraph.classes.map(x => x.class);
-
         mockGraph.classes.forEach(clsObject => (this.classesData[clsObject.class] = { color: clsObject.color }));
 
         this.graph.nodes = mockGraph.nodes;
         this.graph.links = mockGraph.edges;
+
+        this.entities = this.entitiesFromGraph(this.graph);
 
         this.graph.nodes.forEach(n => (
             n._color = this.classesData[n.class].color
