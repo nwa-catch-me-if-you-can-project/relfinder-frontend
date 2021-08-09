@@ -65,9 +65,25 @@
                             :columns="entityTableColumns">
                         </b-table>
                     </div>
+
+                    <div class="panel-block">
+                        <b-field label="Maximum Distance" class="entities-tag-input">
+                            <b-slider
+                                size="is-medium"
+                                :min="0"
+                                :max="4"
+                                v-model="maxDistance">
+                                <template v-for="v in [1, 2, 3]">
+                                    <b-slider-tick :value="v" :key="v">{{ v }}</b-slider-tick>
+                                </template>
+                            </b-slider>
+                        </b-field>
+                    </div>
                 </nav>
             </div>
             <div class="column rel-network-col">
+                <b-loading v-model="isLoading"></b-loading>
+
                 <svg style="height: 0vh; position: absolute">
                     <defs>
                         <marker id="m-end" markerWidth="10" markerHeight="10" refX="19" refY="3" orient="auto" markerUnits="strokeWidth" >
@@ -135,7 +151,9 @@ export default {
                     // Needed to align the cell to the right
                     numeric: true
                 }
-            ]
+            ],
+            maxDistance: 2,
+            isLoading: false
         }
     },
     computed: {
@@ -218,7 +236,7 @@ export default {
 
                 let propertyData = [];
 
-                response.data.forEach(prop => {
+                response.data.properties.forEach(prop => {
                     propertyData.push({
                         property: prop.label,
                         value: prop.value
@@ -249,6 +267,8 @@ export default {
             let view = this;
             let entityIRIs = [];
 
+            view.isLoading = true;
+
             for (let i = 0; i < this.selectedEntityTags.length; i++) {
                 // Extract the last string between parenthesis in the tag name
                 let parenthesisMatches = this.selectedEntityTags[i].match(/\(([^)]+)\)/)
@@ -260,8 +280,23 @@ export default {
                 entityIRIs.push(iri);
             }
 
-            this.$store.state.api.post("query", {entities: entityIRIs}).then(response => {
-                console.log(response.data)
+            let payload = {
+                entities: entityIRIs,
+                maxDistance: this.maxDistance
+            }
+
+            this.$store.state.api.post("query", payload).then(response => {
+                if (response.data.edges.length == 0) {
+                    view.$buefy.toast.open({
+                        message: `There are no connections between the selected entities (max distance ${payload.maxDistance})`,
+                        type: "is-danger",
+                        duration: 5000
+                    })
+
+                    view.isLoading = false;
+                    
+                    return   
+                }
 
                 response.data.nodes.forEach(n => {
                     n.name = n.label;
@@ -293,8 +328,12 @@ export default {
                 // No method is exposed by the component to
                 // monitor graph updates
                 setTimeout(view.updateLinkLabels, 500);
+                
+                view.isLoading = false;
             }).catch((err) => {
                 console.log(err);
+
+                view.isLoading = false;
 
                 view.$buefy.toast.open({
                     message: "Could not execute the query. Please retry later",
@@ -327,7 +366,8 @@ export default {
 }
 
 .app-sidebar {
-    height: 100vh;
+    height: 100%;
+    min-height: 100vh;
     border-radius: 0px;
 }
 
@@ -390,6 +430,10 @@ export default {
     margin-top: 16px;
     margin-left: 16px;
     margin-right: 16px;
+}
+
+.panel-block {
+    padding: 16px;
 }
 
 </style>
