@@ -71,9 +71,9 @@
                             <b-slider
                                 size="is-medium"
                                 :min="0"
-                                :max="4"
+                                :max="6"
                                 v-model="maxDistance">
-                                <template v-for="v in [1, 2, 3]">
+                                <template v-for="v in [1, 2, 3, 4, 5, 6]">
                                     <b-slider-tick :value="v" :key="v">{{ v }}</b-slider-tick>
                                 </template>
                             </b-slider>
