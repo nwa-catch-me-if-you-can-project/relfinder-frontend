@@ -46,26 +46,46 @@
                     </div>
 
                     <div class="panel-block">
-                        <b-field label="Maximum Distance" class="entities-tag-input">
-                            <b-slider
-                                size="is-medium"
-                                :min="0"
-                                :max="6"
-                                v-model="maxDistance">
-                                <template v-for="v in [1, 2, 3, 4, 5, 6]">
-                                    <b-slider-tick :value="v" :key="v">{{ v }}</b-slider-tick>
-                                </template>
-                            </b-slider>
-                        </b-field>
+                        <div class="columns options-column">
+                            <div class="column is-8">
+                                <b-field label="Maximum Distance" class="entities-tag-input">
+                                    <b-slider
+                                        size="is-medium"
+                                        :min="0"
+                                        :max="6"
+                                        v-model="maxDistance">
+                                        <template v-for="v in [1, 2, 3, 4, 5, 6]">
+                                            <b-slider-tick :value="v" :key="v">{{ v }}</b-slider-tick>
+                                        </template>
+                                    </b-slider>
+                                </b-field>
+                            </div>
+
+                            <div class="column">
+                                <b-field label="Edge labels" class="entities-tag-input">
+                                    <b-switch
+                                        @input="refreshDisplayedLinks(graph.links)"
+                                        v-model="showLinkLabels"
+                                        :true-value="true"
+                                        :false-value="false">
+                                    </b-switch>
+                                </b-field>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="panel-block">
                         <b-field label="Legend" style="width: 100%;">
-                            <div v-for="key in Object.keys(legendDictionary)" :key="key" class="level legend-level">
-                                <div class="level-left">
-                                    <div class="legend-color level-item" :style="`background-color: ${legendDictionary[key]};`"></div>
-                                    <p class="level-item">{{ key }}</p>
+                            <div v-if="graphVisible">
+                                <div v-for="key in Object.keys(legendDictionary)" :key="key" class="level legend-level">
+                                    <div class="level-left">
+                                        <div class="legend-color level-item" :style="`background-color: ${legendDictionary[key]};`"></div>
+                                        <p class="level-item">{{ key }}</p>
+                                    </div>
                                 </div>
+                            </div>
+                            <div v-if="!graphVisible">
+                                <p>No graph loaded</p>
                             </div>
                         </b-field>
                     </div>
@@ -110,7 +130,7 @@
                     class="rel-network"
                     ref="relationship-network"
                     :net-nodes="this.graph.nodes"
-                    :net-links="this.graph.links"
+                    :net-links="this.graph.displayedLinks"
                     :options="graphOptions"
                     :link-cb="customizeLink"
                     @link-click="getLinkProperties"
@@ -139,7 +159,10 @@ export default {
             selectedEntityTags: [],
             graph: {
                 nodes: [],
-                links: []
+                links: [],
+                // Links which are presented to the user. This property is used
+                // to handle showing/hiding edge labels dynamically
+                displayedLinks: []
             },
             graphOptions: {
                 nodeSize: 50,
@@ -149,6 +172,7 @@ export default {
                 linkWidth: 2,
                 strLinks: true
             },
+            showLinkLabels: true,
             selectedEntity: null,
             entityTableData: [],
             entityTableColumns: [
@@ -347,6 +371,8 @@ export default {
                 view.graph.nodes = response.data.nodes;
                 view.graph.links = response.data.edges;
 
+                view.refreshDisplayedLinks(response.data.edges);
+
                 // Assign colors to nodes
                 view.classColorDictionary = {};
 
@@ -376,6 +402,19 @@ export default {
                     type: "is-danger"
                 })
             })
+        },
+        refreshDisplayedLinks (links) {
+            let tempLinks = JSON.parse(JSON.stringify(links));
+
+            if (this.showLinkLabels) {
+                this.graph.displayedLinks = tempLinks;
+            } else {
+                tempLinks.forEach(link => {
+                    link.name = null;
+                })
+
+                this.graph.displayedLinks = tempLinks;
+            }
         },
         updateLinkLabels () {
             // Shift back the arrow labels to avoid them
@@ -482,6 +521,10 @@ export default {
 
 .legend-level {
     margin-bottom: 0.5rem;
+}
+
+.options-column {
+    width: 100%;
 }
 
 </style>
