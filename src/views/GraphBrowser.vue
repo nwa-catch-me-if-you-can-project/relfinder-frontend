@@ -168,7 +168,7 @@ export default {
                 nodeSize: 50,
                 nodeLabels: true,
                 linkLabels: true,
-                force: 25000,
+                force: 35000,
                 linkWidth: 2,
                 strLinks: true
             },
@@ -277,8 +277,6 @@ export default {
 
             this.selectedEntity = node;
 
-            console.log(node);
-
             this.$store.state.api.post("entities/properties", {iri: node.iri}).then(response => {
                 console.log(response.data);
 
@@ -308,7 +306,9 @@ export default {
         deselectNodes () {
             // Removes selection markers
             this.graph.nodes.forEach(n => {
-                n._svgAttrs.stroke = null;
+                if (!n.isEndpoint) {
+                    n._svgAttrs.stroke = null;
+                }
             })
         },
         executeQuery () {
@@ -361,6 +361,10 @@ export default {
                 response.data.nodes.forEach(n => {
                     n.name = n.label;
                     n._svgAttrs = {};
+
+                    if (n.isEndpoint) {
+                        n._size = 100;
+                    }
                 });
 
                 response.data.edges.forEach(e => {
@@ -384,6 +388,13 @@ export default {
 
                 view.graph.nodes.forEach(n => {
                     n._color = view.classColorDictionary[n.class]
+
+                    if (n.isEndpoint) {
+                        const nodeColor = new Values(n._color);
+
+                        n._cssClass = "selected-node";
+                        n._svgAttrs.stroke = nodeColor.shade(12).hexString();
+                    }
                 })
 
                 // Dirty trick to make link labels visible.
