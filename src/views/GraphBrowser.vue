@@ -45,6 +45,31 @@
                         </div>
                     </div>
 
+                    <div class="panel-block">
+                        <b-field label="Maximum Distance" class="entities-tag-input">
+                            <b-slider
+                                size="is-medium"
+                                :min="0"
+                                :max="6"
+                                v-model="maxDistance">
+                                <template v-for="v in [1, 2, 3, 4, 5, 6]">
+                                    <b-slider-tick :value="v" :key="v">{{ v }}</b-slider-tick>
+                                </template>
+                            </b-slider>
+                        </b-field>
+                    </div>
+
+                    <div class="panel-block">
+                        <b-field label="Legend" style="width: 100%;">
+                            <div v-for="key in Object.keys(legendDictionary)" :key="key" class="level legend-level">
+                                <div class="level-left">
+                                    <div class="legend-color level-item" :style="`background-color: ${legendDictionary[key]};`"></div>
+                                    <p class="level-item">{{ key }}</p>
+                                </div>
+                            </div>
+                        </b-field>
+                    </div>
+
                     <div
                         v-if="selectedEntity"
                         class="property-table-container">
@@ -64,20 +89,6 @@
                             :data="entityTableData"
                             :columns="entityTableColumns">
                         </b-table>
-                    </div>
-
-                    <div class="panel-block">
-                        <b-field label="Maximum Distance" class="entities-tag-input">
-                            <b-slider
-                                size="is-medium"
-                                :min="0"
-                                :max="6"
-                                v-model="maxDistance">
-                                <template v-for="v in [1, 2, 3, 4, 5, 6]">
-                                    <b-slider-tick :value="v" :key="v">{{ v }}</b-slider-tick>
-                                </template>
-                            </b-slider>
-                        </b-field>
                     </div>
                 </nav>
             </div>
@@ -153,12 +164,25 @@ export default {
                 }
             ],
             maxDistance: 2,
-            isLoading: false
+            isLoading: false,
+            classColorDictionary: {}
         }
     },
     computed: {
         graphVisible: function () {
             return this.graph.nodes.length > 0 && this.graph.links.length > 0;
+        },
+        legendDictionary () {
+            let view = this;
+            let outputDict = {};
+
+            Object.keys(this.classColorDictionary).forEach(k => {
+                // The human-readable class name is the part after the last / and # symbols
+                let terminalUrlComponent = k.split("/").pop().split("#").pop();
+                outputDict[terminalUrlComponent] = view.classColorDictionary[k];
+            })
+
+            return outputDict;
         }
     },
     methods: {
@@ -280,6 +304,18 @@ export default {
                 entityIRIs.push(iri);
             }
 
+            if (entityIRIs.length != 2) {
+                view.$buefy.toast.open({
+                    message: "Queries can only be performed between two objects",
+                    type: "is-danger",
+                    duration: 5000
+                })
+
+                view.isLoading = false;
+
+                return;
+            }
+
             let payload = {
                 entities: entityIRIs,
                 maxDistance: this.maxDistance
@@ -312,16 +348,16 @@ export default {
                 view.graph.links = response.data.edges;
 
                 // Assign colors to nodes
-                let classColorDictionary = {};
+                view.classColorDictionary = {};
 
                 response.data.classes.forEach(graphClass => {
-                    classColorDictionary[graphClass] = randomColor({
+                    view.classColorDictionary[graphClass] = randomColor({
                         luminosity: "light"
                     });
                 })
 
                 view.graph.nodes.forEach(n => {
-                    n._color = classColorDictionary[n.class]
+                    n._color = view.classColorDictionary[n.class]
                 })
 
                 // Dirty trick to make link labels visible.
@@ -434,6 +470,18 @@ export default {
 
 .panel-block {
     padding: 16px;
+}
+
+.legend-color {
+    width: 32px;
+    height: 32px;
+    background-color: red;
+    border-radius: 6px;
+    margin-right: 16px;
+}
+
+.legend-level {
+    margin-bottom: 0.5rem;
 }
 
 </style>
