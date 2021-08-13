@@ -6,89 +6,18 @@
                     <p class="panel-heading">
                         UM-IDS RelFinder
                     </p>
-                    <div class="panel-block">
-                        <b-field label="Select Entities" class="entities-tag-input">
-                            <b-taginput
-                                v-model="selectedEntityTags"
-                                :data="filteredEntityTags"
-                                autocomplete
-                                icon="label"
-                                :open-on-focus="true"
-                                placeholder="Add a tag"
-                                aria-close-label="Delete this tag"
-                                @typing="getFilteredTags"
-                                @add="tagListEdited"
-                                @remove="tagListEdited">
-                            </b-taginput>
-                        </b-field>
-                    </div>
 
-                    <div class="panel-block">
-                        <div class="container is-fluid buttons-container">
-                            <div class="columns">
-                                <div class="column">
-                                    <b-button
-                                        @click="executeQuery"
-                                        type="is-primary refresh-btn">
-                                        Refresh Graph
-                                    </b-button>
-                                </div>
+                    <EntitiesInput
+                        @refreshGraph="executeQuery"
+                        @resetFilters="resetFilters" />
 
-                                <div class="column">
-                                    <b-button
-                                        @click="resetFilters"
-                                        type="is-danger refresh-btn">
-                                        Reset Filters
-                                    </b-button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <OptionsPanel
+                        @toggleLinkLabels="toggleEdgeLabels"
+                        :maxDistance="maxDistance" />
 
-                    <div class="panel-block">
-                        <div class="columns options-column">
-                            <div class="column is-8">
-                                <b-field label="Maximum Distance" class="entities-tag-input">
-                                    <b-slider
-                                        size="is-medium"
-                                        :min="0"
-                                        :max="6"
-                                        v-model="maxDistance">
-                                        <template v-for="v in [1, 2, 3, 4, 5, 6]">
-                                            <b-slider-tick :value="v" :key="v">{{ v }}</b-slider-tick>
-                                        </template>
-                                    </b-slider>
-                                </b-field>
-                            </div>
-
-                            <div class="column">
-                                <b-field label="Edge labels" class="entities-tag-input">
-                                    <b-switch
-                                        @input="refreshDisplayedLinks(graph.links)"
-                                        v-model="showLinkLabels"
-                                        :true-value="true"
-                                        :false-value="false">
-                                    </b-switch>
-                                </b-field>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="panel-block">
-                        <b-field label="Legend" style="width: 100%;">
-                            <div v-if="graphVisible">
-                                <div v-for="key in Object.keys(legendDictionary)" :key="key" class="level legend-level">
-                                    <div class="level-left">
-                                        <div class="legend-color level-item" :style="`background-color: ${legendDictionary[key]};`"></div>
-                                        <p class="level-item">{{ key }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-if="!graphVisible">
-                                <p>No graph loaded</p>
-                            </div>
-                        </b-field>
-                    </div>
+                    <Legend
+                        :graphVisible="graphVisible"
+                        :legendDictionary="legendDictionary" />
 
                     <div
                         v-if="selectedEntity"
@@ -112,6 +41,7 @@
                     </div>
                 </nav>
             </div>
+
             <div class="column rel-network-col">
                 <b-loading v-model="isLoading"></b-loading>
 
@@ -133,7 +63,6 @@
                     :net-links="this.graph.displayedLinks"
                     :options="graphOptions"
                     :link-cb="customizeLink"
-                    @link-click="getLinkProperties"
                     @node-click="getEntityDataProperties" />
             </div>
         </div>
@@ -146,17 +75,20 @@ import Values from 'values.js'
 import D3Network from 'vue-d3-network'
 var randomColor = require('randomcolor')
 
+import Legend from '@/components/Legend.vue';
+import OptionsPanel from '@/components/OptionsPanel.vue';
+import EntitiesInput from '@/components/EntitiesInput.vue';
+
 export default {
     name: "GraphBrowser",
     components: {
-        D3Network
+        Legend,
+        D3Network,
+        OptionsPanel,
+        EntitiesInput
     },
     data: function () {
         return {
-            entities: [],
-            entityTags: [],
-            filteredEntityTags: [],
-            selectedEntityTags: [],
             graph: {
                 nodes: [],
                 links: [],
@@ -210,54 +142,10 @@ export default {
         }
     },
     methods: {
-        getFilteredTags (text) {
-            this.filteredEntityTags = this.entityTags.filter((option) => {
-                // The option must not have been chosen yet and match the partial
-                // text typed in the input field
-                return !this.selectedEntityTags.includes(option) && option.toLowerCase().indexOf(text.toLowerCase()) >= 0
-            })
-        },
-        tagListEdited () {
-            // When a tag is added/removed filter the allowable tags
-            // to the ones not chosen yet
-            this.filteredEntityTags = this.entityTags.filter((option) => {
-                return !this.selectedEntityTags.includes(option)
-            });
-        },
         resetFilters () {
             this.selectedEntityTags = [];
             this.graph.nodes = [];
             this.graph.links = [];
-        },
-        refreshEntityTags (entities) {
-            let entityTags = [];
-
-            for (let i = 0; i < entities.length; i++) {
-                let iri = entities[i].iri.replaceAll(
-                    process.env.VUE_APP_KG_PREFIX,
-                    ""
-                )
-
-                entityTags.push(`${entities[i].label} (${iri})`);
-            }
-
-            this.entityTags = entityTags;
-            this.filteredEntityTags = entityTags;
-        },
-        fetchEntities () {
-            let view = this;
-
-            this.$store.state.api.get("entities").then(response => {
-                view.entities = response.data.entities;
-                view.refreshEntityTags(view.entities);
-            }).catch((err) => {
-                console.log(err);
-
-                view.$buefy.toast.open({
-                    message: "Could not fetch entities. Please reload the page",
-                    type: "is-danger"
-                })
-            })
         },
         customizeLink (link) {
             link._svgAttrs = {
@@ -299,10 +187,6 @@ export default {
                 })
             })
         },
-        getLinkProperties (event, link) {
-            console.log(link);
-            link._svgAttrs.stroke = "#000";
-        },
         deselectNodes () {
             // Removes selection markers
             this.graph.nodes.forEach(n => {
@@ -311,15 +195,15 @@ export default {
                 }
             })
         },
-        executeQuery () {
+        executeQuery (selectedEntityTags) {
             let view = this;
             let entityIRIs = [];
 
             view.isLoading = true;
 
-            for (let i = 0; i < this.selectedEntityTags.length; i++) {
+            for (let i = 0; i < selectedEntityTags.length; i++) {
                 // Extract the last string between parenthesis in the tag name
-                let parenthesisMatches = this.selectedEntityTags[i].match(/\(([^)]+)\)/)
+                let parenthesisMatches = selectedEntityTags[i].match(/\(([^)]+)\)/)
                 let entityId = parenthesisMatches[parenthesisMatches.length - 1];
 
                 // Add the IRI prefix
@@ -435,6 +319,10 @@ export default {
             for (let i = 0; i < textPaths.length; i++) {
                 textPaths[i].setAttribute("startOffset", "10%");
             }
+        },
+        toggleEdgeLabels (value) {
+            this.showLinkLabels = value;
+            this.refreshDisplayedLinks(this.graph.links);
         }
     },
     created: function () {
@@ -477,39 +365,10 @@ export default {
     padding-right: 0px;
 }
 
-.entities-block {
-    background-color: #ededed;
-}
-
-.refresh-btn {
-    width: 100%;
-}
-
-.entities-tag-input {
-    width: 100%;
-}
-
-.buttons-container {
-    padding-left: 0px;
-    padding-right: 0px;
-}
-
-.buttons-container > .columns > .column {
-    padding-right: 0px;
-}
-
-.buttons-container > .columns {
-    padding-right: 0.75rem;
-}
-
 .graph-info-label {
     top: 40%;
     position: relative;
     text-align: center;
-}
-
-#m-end path {
-  fill: #E5E5E5;
 }
 
 .property-table-container {
@@ -520,48 +379,6 @@ export default {
 
 .panel-block {
     padding: 16px;
-}
-
-.legend-color {
-    width: 32px;
-    height: 32px;
-    background-color: red;
-    border-radius: 6px;
-    margin-right: 16px;
-}
-
-.legend-level {
-    margin-bottom: 0.5rem;
-}
-
-.options-column {
-    width: 100%;
-}
-
-</style>
-
-<style>
-
-.link {
-    stroke: #E5E5E5 !important;
-}
-
-.node-label {
-    font-weight: bold;
-    font-size: 12px;
-}
-
-textPath {
-    font-size: 12px;
-}
-
-.link-label {
-    transform: translate(0, -16px);
-    z-index: 100;
-}
-
-.selected-node {
-    stroke-width: 5;
 }
 
 </style>

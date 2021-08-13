@@ -10,6 +10,8 @@ import Vuex from 'vuex'
 import Buefy from 'buefy'
 import 'buefy/dist/buefy.css'
 
+import '@/assets/style.css'
+
 import router from './router'
 const axios = require('axios')
 
