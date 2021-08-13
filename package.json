@@ -15,7 +15,7 @@
     "randomcolor": "^0.6.2",
     "values.js": "^2.0.0",
     "vue": "^2.6.11",
-    "vue-d3-network": "file:vue-d3-network-0.1.29.tgz",
+    "vue-d3-network": "file:libs/vue-d3-network-0.1.29.tgz",
     "vue-router": "^3.5.1",
     "vuex": "^3.6.2"
   },
