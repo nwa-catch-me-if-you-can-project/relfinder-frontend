@@ -25,6 +25,12 @@ const store = new Vuex.Store({
     api: axios.create({
       baseURL: process.env.VUE_APP_API_ROOT
     }),
+    maxDistance: 2
+  },
+  mutations: {
+    updateMaxDistance(state, value) {
+      state.maxDistance = value;
+    }
   }
 })
 

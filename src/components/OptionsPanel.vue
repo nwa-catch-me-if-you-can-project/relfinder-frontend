@@ -7,7 +7,10 @@
                         size="is-medium"
                         :min="1"
                         :max="6"
-                        v-model="maxDistance">
+                        :default="2"
+                        v-model="maxDistance"
+                        @input="maxDistanceUpdated"
+                        lazy>
                         <template v-for="v in [1, 2, 3, 4, 5, 6]">
                             <b-slider-tick :value="v" :key="v">{{ v }}</b-slider-tick>
                         </template>
@@ -33,18 +36,22 @@
 
 export default {
     name: "OptionsPanel",
-    props: {
-        maxDistance: Number
-    },
     data: function () {
         return {
-            showLinkLabels: true
+            showLinkLabels: true,
+            maxDistance: 2
         }
     },
     methods: {
         toggleEdgeLabels () {
             this.$emit("toggleLinkLabels", this.showLinkLabels);
+        },
+        maxDistanceUpdated (value) {
+            this.$store.commit("updateMaxDistance", value);
         }
+    },
+    mounted: function () {
+        this.maxDistance = this.$store.state.maxDistance;
     }
 }
 

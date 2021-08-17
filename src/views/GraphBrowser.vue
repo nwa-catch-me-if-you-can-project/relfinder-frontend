@@ -12,8 +12,7 @@
                         @resetFilters="resetFilters" />
 
                     <OptionsPanel
-                        @toggleLinkLabels="toggleEdgeLabels"
-                        :maxDistance="maxDistance" />
+                        @toggleLinkLabels="toggleEdgeLabels" />
 
                     <Legend
                         :graphVisible="graphVisible"
@@ -47,7 +46,25 @@
 
                 <svg style="height: 0vh; position: absolute">
                     <defs>
-                        <marker id="m-end" markerWidth="10" markerHeight="10" refX="19" refY="3" orient="auto" markerUnits="strokeWidth" >
+                        <marker
+                            id="m-end"
+                            markerWidth="10"
+                            markerHeight="10"
+                            refX="19"
+                            refY="3"
+                            orient="auto"
+                            markerUnits="strokeWidth">
+                            <path d="M0,0 L0,6 L9,3 z"></path>
+                        </marker>
+
+                        <marker
+                            id="m-end-endpoint"
+                            markerWidth="10"
+                            markerHeight="10"
+                            refX="28"
+                            refY="3"
+                            orient="auto"
+                            markerUnits="strokeWidth">
                             <path d="M0,0 L0,6 L9,3 z"></path>
                         </marker>
                     </defs>
@@ -100,7 +117,7 @@ export default {
                 nodeSize: 50,
                 nodeLabels: true,
                 linkLabels: true,
-                force: 35000,
+                force: 50000,
                 linkWidth: 2,
                 strLinks: true
             },
@@ -119,7 +136,6 @@ export default {
                     numeric: true
                 }
             ],
-            maxDistance: 2,
             isLoading: false,
             classColorDictionary: {}
         }
@@ -148,8 +164,15 @@ export default {
             this.graph.links = [];
         },
         customizeLink (link) {
-            link._svgAttrs = {
-                "marker-end": "url(#m-end)",
+            if (link.tid == 0 || link.tid == 1) {
+                // Special customizations for source and destination nodes
+                link._svgAttrs = {
+                    "marker-end": "url(#m-end-endpoint)"
+                }
+            } else {
+                link._svgAttrs = {
+                    "marker-end": "url(#m-end)",
+                }
             }
 
             return link
@@ -206,8 +229,12 @@ export default {
                 let parenthesisMatches = selectedEntityTags[i].match(/\(([^)]+)\)/)
                 let entityId = parenthesisMatches[parenthesisMatches.length - 1];
 
-                // Add the IRI prefix
+                // Add the IRI prefix if not present yet
                 let iri = `${process.env.VUE_APP_KG_PREFIX}${entityId}`
+
+                if (entityId.includes("http")) {
+                    iri = entityId;
+                }
 
                 entityIRIs.push(iri);
             }
@@ -226,7 +253,7 @@ export default {
 
             let payload = {
                 entities: entityIRIs,
-                maxDistance: this.maxDistance
+                maxDistance: this.$store.state.maxDistance
             }
 
             this.$store.state.api.post("query", payload).then(response => {
@@ -239,7 +266,7 @@ export default {
 
                     view.isLoading = false;
                     
-                    return   
+                    return
                 }
 
                 response.data.nodes.forEach(n => {
@@ -247,7 +274,7 @@ export default {
                     n._svgAttrs = {};
 
                     if (n.isEndpoint) {
-                        n._size = 100;
+                        n._size = 75;
                     }
                 });
 
@@ -324,9 +351,6 @@ export default {
             this.showLinkLabels = value;
             this.refreshDisplayedLinks(this.graph.links);
         }
-    },
-    created: function () {
-        this.fetchEntities();
     }
 };
 

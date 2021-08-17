@@ -2,6 +2,10 @@
     fill: #E5E5E5;
 }
 
+#m-end-endpoint path {
+    fill: #E5E5E5;
+}
+
 .link {
     stroke: #E5E5E5 !important;
 }
