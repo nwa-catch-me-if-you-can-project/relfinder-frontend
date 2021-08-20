@@ -23,7 +23,10 @@ Vue.use(Vuex);
 const store = new Vuex.Store({
   state: {
     api: axios.create({
-      baseURL: process.env.VUE_APP_API_ROOT
+      baseURL: process.env.VUE_APP_API_ROOT,
+      headers: {
+        "Api-Key": process.env.VUE_APP_API_KEY
+      }
     }),
     maxDistance: 2
   },
