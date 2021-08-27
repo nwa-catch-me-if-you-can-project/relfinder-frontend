@@ -14,9 +14,7 @@
                     <OptionsPanel
                         @toggleLinkLabels="toggleEdgeLabels" />
 
-                    <Legend
-                        :graphVisible="graphVisible"
-                        :legendDictionary="legendDictionary" />
+                    <Legend />
 
                     <div
                         v-if="selectedEntity"
@@ -61,7 +59,7 @@
                             id="m-end-endpoint"
                             markerWidth="10"
                             markerHeight="10"
-                            refX="28"
+                            refX="22"
                             refY="3"
                             orient="auto"
                             markerUnits="strokeWidth">
@@ -88,9 +86,8 @@
 
 <script>
 
-import Values from 'values.js'
 import D3Network from 'vue-d3-network'
-var randomColor = require('randomcolor')
+import iconsMapping from '@/assets/icons.js';
 
 import Legend from '@/components/Legend.vue';
 import OptionsPanel from '@/components/OptionsPanel.vue';
@@ -137,24 +134,16 @@ export default {
                 }
             ],
             isLoading: false,
-            classColorDictionary: {}
+            legendColors: {
+                selected: "#F14668",
+                endpoint: "#7957D5",
+                default: "#000000"
+            }
         }
     },
     computed: {
         graphVisible: function () {
             return this.graph.nodes.length > 0 && this.graph.links.length > 0;
-        },
-        legendDictionary () {
-            let view = this;
-            let outputDict = {};
-
-            Object.keys(this.classColorDictionary).forEach(k => {
-                // The human-readable class name is the part after the last / and # symbols
-                let terminalUrlComponent = k.split("/").pop().split("#").pop();
-                outputDict[terminalUrlComponent] = view.classColorDictionary[k];
-            })
-
-            return outputDict;
         }
     },
     methods: {
@@ -181,10 +170,7 @@ export default {
             let view = this;
             this.deselectNodes();
 
-            const nodeColor = new Values(node._color);
-
-            node._cssClass = "selected-node";
-            node._svgAttrs.stroke = nodeColor.shade(12).hexString();
+            node._color = this.legendColors.selected;
 
             this.selectedEntity = node;
 
@@ -211,10 +197,14 @@ export default {
             })
         },
         deselectNodes () {
+            let view = this;
+
             // Removes selection markers
             this.graph.nodes.forEach(n => {
                 if (!n.isEndpoint) {
-                    n._svgAttrs.stroke = null;
+                    n._color = view.legendColors.default;
+                } else {
+                    n._color = view.legendColors.endpoint;
                 }
             })
         },
@@ -273,8 +263,13 @@ export default {
                     n.name = n.label;
                     n._svgAttrs = {};
 
+                    if (n.class in iconsMapping) {
+                        n.svgSym = iconsMapping[n.class];
+                    }
+
                     if (n.isEndpoint) {
                         n._size = 75;
+                        n._color = view.legendColors.endpoint;
                     }
                 });
 
@@ -287,26 +282,6 @@ export default {
                 view.graph.links = response.data.edges;
 
                 view.refreshDisplayedLinks(response.data.edges);
-
-                // Assign colors to nodes
-                view.classColorDictionary = {};
-
-                response.data.classes.forEach(graphClass => {
-                    view.classColorDictionary[graphClass] = randomColor({
-                        luminosity: "light"
-                    });
-                })
-
-                view.graph.nodes.forEach(n => {
-                    n._color = view.classColorDictionary[n.class]
-
-                    if (n.isEndpoint) {
-                        const nodeColor = new Values(n._color);
-
-                        n._cssClass = "selected-node";
-                        n._svgAttrs.stroke = nodeColor.shade(12).hexString();
-                    }
-                })
 
                 // Dirty trick to make link labels visible.
                 // No method is exposed by the component to
