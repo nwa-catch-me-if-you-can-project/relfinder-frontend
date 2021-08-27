@@ -1,58 +1,84 @@
 <template>
     <div class="container is-fluid app-container">
         <div class="columns">
-            <div class="column is-3 app-sidebar-col">
+            <div class="column is-4 is-5-tablet is-3-fullhd app-sidebar-col">
                 <nav class="panel app-sidebar">
                     <p class="panel-heading">
                         UM-IDS RelFinder
                     </p>
-                    <div class="panel-block">
-                        <b-field label="Select Entities" class="entities-tag-input">
-                            <b-taginput
-                                v-model="selectedEntities"
-                                :data="filteredEntities"
-                                autocomplete
-                                icon="label"
-                                :open-on-focus="true"
-                                placeholder="Add a tag"
-                                aria-close-label="Delete this tag"
-                                @typing="getFilteredTags"
-                                @add="tagListEdited"
-                                @remove="tagListEdited">
-                            </b-taginput>
-                        </b-field>
-                    </div>
 
-                    <div class="panel-block">
-                        <div class="container is-fluid buttons-container">
-                            <div class="columns">
-                                <div class="column">
-                                    <b-button
-                                        @click="refreshGraph"
-                                        type="is-primary refresh-btn">
-                                        Refresh Graph
-                                    </b-button>
-                                </div>
+                    <EntitiesInput
+                        @refreshGraph="executeQuery"
+                        @resetFilters="resetFilters" />
 
-                                <div class="column">
-                                    <b-button
-                                        @click="resetFilters"
-                                        type="is-danger refresh-btn">
-                                        Reset Filters
-                                    </b-button>
-                                </div>
-                            </div>
-                        </div>
+                    <OptionsPanel
+                        @toggleLinkLabels="toggleEdgeLabels" />
+
+                    <Legend />
+
+                    <div
+                        v-if="selectedEntity"
+                        class="property-table-container">
+                        <h3 class="subtitle">Entity properties</h3>
+                        <p>
+                            Data properties of entity
+                            <b>{{ selectedEntity.label }}</b>
+                            of class
+                            <b>{{ selectedEntity.class }}</b>
+                            with IRI
+                            <b>{{ selectedEntity.iri }}</b>
+                        </p>
+
+                        <br/>
+
+                        <b-table
+                            :data="entityTableData"
+                            :columns="entityTableColumns">
+                        </b-table>
                     </div>
                 </nav>
             </div>
+
             <div class="column rel-network-col">
+                <b-loading v-model="isLoading"></b-loading>
+
+                <svg style="height: 0vh; position: absolute">
+                    <defs>
+                        <marker
+                            id="m-end"
+                            markerWidth="10"
+                            markerHeight="10"
+                            refX="19"
+                            refY="3"
+                            orient="auto"
+                            markerUnits="strokeWidth">
+                            <path d="M0,0 L0,6 L9,3 z"></path>
+                        </marker>
+
+                        <marker
+                            id="m-end-endpoint"
+                            markerWidth="10"
+                            markerHeight="10"
+                            refX="22"
+                            refY="3"
+                            orient="auto"
+                            markerUnits="strokeWidth">
+                            <path d="M0,0 L0,6 L9,3 z"></path>
+                        </marker>
+                    </defs>
+                </svg>
+
+                <p v-if="!graphVisible" class="graph-info-label">Select two or more entities and press <b>Refresh Graph</b> to begin</p>
+
                 <d3-network
+                    v-if="graphVisible"
                     class="rel-network"
                     ref="relationship-network"
                     :net-nodes="this.graph.nodes"
-                    :net-links="this.graph.links"
-                    :options="graphOptions" />
+                    :net-links="this.graph.displayedLinks"
+                    :options="graphOptions"
+                    :link-cb="customizeLink"
+                    @node-click="getEntityDataProperties" />
             </div>
         </div>
     </div>
@@ -61,73 +87,245 @@
 <script>
 
 import D3Network from 'vue-d3-network'
-import mockGraph from '@/../graph/demo-graph.json'
+import iconsMapping from '@/assets/icons.js';
+
+import Legend from '@/components/Legend.vue';
+import OptionsPanel from '@/components/OptionsPanel.vue';
+import EntitiesInput from '@/components/EntitiesInput.vue';
 
 export default {
     name: "GraphBrowser",
     components: {
-        D3Network
+        Legend,
+        D3Network,
+        OptionsPanel,
+        EntitiesInput
     },
     data: function () {
         return {
-            entities: [],
-            filteredEntities: [],
-            selectedEntities: [],
             graph: {
                 nodes: [],
-                links: []
+                links: [],
+                // Links which are presented to the user. This property is used
+                // to handle showing/hiding edge labels dynamically
+                displayedLinks: []
             },
             graphOptions: {
-                nodeSize: 45,
+                nodeSize: 50,
                 nodeLabels: true,
-                linkLabels:true,
-                force: 4500
+                linkLabels: true,
+                force: 50000,
+                linkWidth: 2,
+                strLinks: true
+            },
+            showLinkLabels: true,
+            selectedEntity: null,
+            entityTableData: [],
+            entityTableColumns: [
+                {
+                    field: "property",
+                    label: "Property"
+                },
+                {
+                    field: "value",
+                    label: "Value",
+                    // Needed to align the cell to the right
+                    numeric: true
+                }
+            ],
+            isLoading: false,
+            legendColors: {
+                selected: "#F14668",
+                endpoint: "#7957D5",
+                default: "#000000"
             }
         }
     },
-    methods: {
-        getFilteredTags (text) {
-            this.filteredEntities = this.entities.filter((option) => {
-                // The option must not have been chosen yet and match the partial
-                // text typed in the input field
-                return !this.selectedEntities.includes(option) && option.toLowerCase().indexOf(text.toLowerCase()) >= 0
-            })
-        },
-        tagListEdited () {
-            // When a tag is added/removed filter the allowable tags
-            // to the ones not chosen yet
-            this.filteredEntities = this.entities.filter((option) => {
-                return !this.selectedEntities.includes(option)
-            });
-        },
-        refreshGraph () {
-            let filteredNodes = mockGraph.nodes.filter(node => this.selectedEntities.includes(node.name));
-            let filteredNodesIDs = filteredNodes.map(node => node.id);
-            let filteredEdges = mockGraph.edges.filter(edge => filteredNodesIDs.includes(edge.sid) && filteredNodesIDs.includes(edge.tid));
-
-            this.graph.nodes = filteredNodes;
-            this.graph.links = filteredEdges;
-        },
-        resetFilters () {
-            this.graph.nodes = mockGraph.nodes;
-            this.graph.links = mockGraph.edges;
-        },
-        entitiesFromGraph(graph) {
-            return graph.nodes.map(x => x.name);
+    computed: {
+        graphVisible: function () {
+            return this.graph.nodes.length > 0 && this.graph.links.length > 0;
         }
     },
-    mounted: function () {
-        this.classesData = {};
-        mockGraph.classes.forEach(clsObject => (this.classesData[clsObject.class] = { color: clsObject.color }));
+    methods: {
+        resetFilters () {
+            this.selectedEntityTags = [];
+            this.graph.nodes = [];
+            this.graph.links = [];
+        },
+        customizeLink (link) {
+            if (link.tid == 0 || link.tid == 1) {
+                // Special customizations for source and destination nodes
+                link._svgAttrs = {
+                    "marker-end": "url(#m-end-endpoint)"
+                }
+            } else {
+                link._svgAttrs = {
+                    "marker-end": "url(#m-end)",
+                }
+            }
 
-        this.graph.nodes = mockGraph.nodes;
-        this.graph.links = mockGraph.edges;
+            return link
+        },
+        getEntityDataProperties (event, node) {
+            let view = this;
+            this.deselectNodes();
 
-        this.entities = this.entitiesFromGraph(this.graph);
+            node._color = this.legendColors.selected;
 
-        this.graph.nodes.forEach(n => (
-            n._color = this.classesData[n.class].color
-        ));
+            this.selectedEntity = node;
+
+            this.$store.state.api.post("entities/properties", {iri: node.iri}).then(response => {
+                console.log(response.data);
+
+                let propertyData = [];
+
+                response.data.properties.forEach(prop => {
+                    propertyData.push({
+                        property: prop.label,
+                        value: prop.value
+                    });
+                });
+
+                view.entityTableData = propertyData;
+            }).catch((err) => {
+                console.log(err);
+
+                view.$buefy.toast.open({
+                    message: "Could not fetch the entity properties. Please reload the page",
+                    type: "is-danger"
+                })
+            })
+        },
+        deselectNodes () {
+            let view = this;
+
+            // Removes selection markers
+            this.graph.nodes.forEach(n => {
+                if (!n.isEndpoint) {
+                    n._color = view.legendColors.default;
+                } else {
+                    n._color = view.legendColors.endpoint;
+                }
+            })
+        },
+        executeQuery (selectedEntityTags) {
+            let view = this;
+            let entityIRIs = [];
+
+            view.isLoading = true;
+
+            for (let i = 0; i < selectedEntityTags.length; i++) {
+                // Extract the last string between parenthesis in the tag name
+                let parenthesisMatches = selectedEntityTags[i].match(/\(([^)]+)\)/)
+                let entityId = parenthesisMatches[parenthesisMatches.length - 1];
+
+                // Add the IRI prefix if not present yet
+                let iri = `${process.env.VUE_APP_KG_PREFIX}${entityId}`
+
+                if (entityId.includes("http")) {
+                    iri = entityId;
+                }
+
+                entityIRIs.push(iri);
+            }
+
+            if (entityIRIs.length != 2) {
+                view.$buefy.toast.open({
+                    message: "Queries can only be performed between two objects",
+                    type: "is-danger",
+                    duration: 5000
+                })
+
+                view.isLoading = false;
+
+                return;
+            }
+
+            let payload = {
+                entities: entityIRIs,
+                maxDistance: this.$store.state.maxDistance
+            }
+
+            this.$store.state.api.post("query", payload).then(response => {
+                if (response.data.edges.length == 0) {
+                    view.$buefy.toast.open({
+                        message: `There are no connections between the selected entities (max distance ${payload.maxDistance})`,
+                        type: "is-danger",
+                        duration: 5000
+                    })
+
+                    view.isLoading = false;
+                    
+                    return
+                }
+
+                response.data.nodes.forEach(n => {
+                    n.name = n.label;
+                    n._svgAttrs = {};
+
+                    if (n.class in iconsMapping) {
+                        n.svgSym = iconsMapping[n.class];
+                    }
+
+                    if (n.isEndpoint) {
+                        n._size = 75;
+                        n._color = view.legendColors.endpoint;
+                    }
+                });
+
+                response.data.edges.forEach(e => {
+                    e._color = "#000000";
+                    e.name = e.label;
+                });
+
+                view.graph.nodes = response.data.nodes;
+                view.graph.links = response.data.edges;
+
+                view.refreshDisplayedLinks(response.data.edges);
+
+                // Dirty trick to make link labels visible.
+                // No method is exposed by the component to
+                // monitor graph updates
+                setTimeout(view.updateLinkLabels, 500);
+                
+                view.isLoading = false;
+            }).catch((err) => {
+                console.log(err);
+
+                view.isLoading = false;
+
+                view.$buefy.toast.open({
+                    message: "Could not execute the query. Please retry later",
+                    type: "is-danger"
+                })
+            })
+        },
+        refreshDisplayedLinks (links) {
+            let tempLinks = JSON.parse(JSON.stringify(links));
+
+            if (this.showLinkLabels) {
+                this.graph.displayedLinks = tempLinks;
+            } else {
+                tempLinks.forEach(link => {
+                    link.name = null;
+                })
+
+                this.graph.displayedLinks = tempLinks;
+            }
+        },
+        updateLinkLabels () {
+            // Shift back the arrow labels to avoid them
+            // being covered by the nodes
+            let textPaths = document.getElementsByTagName("textPath");
+
+            for (let i = 0; i < textPaths.length; i++) {
+                textPaths[i].setAttribute("startOffset", "10%");
+            }
+        },
+        toggleEdgeLabels (value) {
+            this.showLinkLabels = value;
+            this.refreshDisplayedLinks(this.graph.links);
+        }
     }
 };
 
@@ -141,7 +339,8 @@ export default {
 }
 
 .app-sidebar {
-    height: 100vh;
+    height: 100%;
+    min-height: 100vh;
     border-radius: 0px;
 }
 
@@ -165,29 +364,20 @@ export default {
     padding-right: 0px;
 }
 
-.entities-block {
-    background-color: #ededed;
+.graph-info-label {
+    top: 40%;
+    position: relative;
+    text-align: center;
 }
 
-.refresh-btn {
-    width: 100%;
+.property-table-container {
+    margin-top: 16px;
+    margin-left: 16px;
+    margin-right: 16px;
 }
 
-.entities-tag-input {
-    width: 100%;
-}
-
-.buttons-container {
-    padding-left: 0px;
-    padding-right: 0px;
-}
-
-.buttons-container > .columns > .column {
-    padding-right: 0px;
-}
-
-.buttons-container > .columns {
-    padding-right: 0.75rem;
+.panel-block {
+    padding: 16px;
 }
 
 </style>

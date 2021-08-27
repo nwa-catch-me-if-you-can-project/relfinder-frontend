@@ -1,0 +1,29 @@
+#m-end path {
+    fill: #E5E5E5;
+}
+
+#m-end-endpoint path {
+    fill: #E5E5E5;
+}
+
+.link {
+    stroke: #E5E5E5 !important;
+}
+
+.node-label {
+    font-weight: bold;
+    font-size: 12px;
+}
+
+textPath {
+    font-size: 12px;
+}
+
+.link-label {
+    transform: translate(0, -16px);
+    z-index: 100;
+}
+
+.selected-node {
+    stroke-width: 5;
+}
