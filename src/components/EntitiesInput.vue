@@ -7,6 +7,7 @@
                     :data="filteredEntityTags"
                     autocomplete
                     icon="label"
+                    type="is-primary"
                     :open-on-focus="true"
                     placeholder="Add a tag"
                     aria-close-label="Delete this tag"

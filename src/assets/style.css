@@ -27,3 +27,8 @@ textPath {
 .selected-node {
     stroke-width: 5;
 }
+
+.dropdown-item:hover {
+    background-color: #7957D5 !important;
+    color: white !important;
+}

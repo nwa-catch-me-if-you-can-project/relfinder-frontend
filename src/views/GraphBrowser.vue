@@ -4,7 +4,7 @@
             <div class="column is-4 is-5-tablet is-3-fullhd app-sidebar-col">
                 <nav class="panel app-sidebar">
                     <p class="panel-heading">
-                        UM-IDS RelFinder
+                        RelFinder
                     </p>
 
                     <EntitiesInput

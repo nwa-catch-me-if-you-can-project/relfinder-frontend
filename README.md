@@ -8,7 +8,7 @@ To run the app for development first install the required libraries by running `
 
 ### Production setup
 
-The production app is deployed via docker. To build the docker image execute
+Before running the app set the `VUE_APP_API_KEY` variable in the `.env` file. This variable must match the `API_KEY` set for the RelFinder backend. Once done build the docker with:
 
 ```sh
 docker build . -t relfinder-frontend:0.0.1
@@ -19,8 +19,3 @@ To run the container execute
 ```sh
 docker run --rm -p 80:80 relfinder-frontend:0.0.1
 ```
-
-### Todos
-
-* [x] Add class legend (for node colors)
-* [x] Dockerize app
