@@ -8,7 +8,7 @@ To run the app for development first install the required libraries by running `
 
 ### Production setup
 
-Before running the app set the `VUE_APP_API_KEY` variable in the `.env` file. This variable must match the `API_KEY` set for the RelFinder backend. Once done build the docker with:
+Before running the app, configure the `.env` file by setting the `VUE_APP_API_ROOT` to the backend URL and the `VUE_APP_API_KEY` to the same value as the backend's `API_KEY`. Once done build the docker with:
 
 ```sh
 docker build . -t relfinder-frontend:0.0.1
