@@ -19,3 +19,5 @@ To run the container execute
 ```sh
 docker run --rm -p 80:80 relfinder-frontend:0.0.1
 ```
+
+The app will then be available at [localhost](http://localhost)
