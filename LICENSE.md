@@ -23,7 +23,7 @@ Which License Should I Choose?
 
 In short,
 
-* If you derive a commercial advantage by using Relfinder with a closed source solution, or even you if you (re)use Relfinder source code with a non-commerical closed source solution, you must arrange alternative license terms for your use of Relfinder which will, at a minimum, remove the need to publish your source code. Contact the developers for details about this.
+* If you derive a commercial advantage by using Relfinder with a closed source solution, or even you if you (re)use Relfinder source code with a non-commercial closed source solution, you must arrange alternative license terms for your use of Relfinder which will, at a minimum, remove the need to publish your source code. Contact the developers for details about this.
 
 * If you wish to use Relfinder under its open source terms, you must include due credit and attribution to the developers of Relfinder in your source code and documentation for your solution. And, you must contribute back to the community the source code for the solution you use Relfinder with, so that others may benefit from it as you benefit from Relfinder.
 
@@ -35,4 +35,5 @@ For more about Relfinder's dual license terms, or to arrange proprietary or alte
 2. Walter Simoncini (walter.simoncini.2@gmail.com)                      
 
 [1] http://en.wikipedia.org/wiki/Dual_license
+
 [2] http://www.opensource.org/licenses
