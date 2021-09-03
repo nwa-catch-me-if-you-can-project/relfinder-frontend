@@ -1,6 +1,6 @@
 # RelFinder frontend
 
-This repository contains the frontend for RelFinder, developed as a `VueJS` app.
+This repository contains the frontend for RelFinder, developed as a `VueJS` app. The backend for Relfinder can be found here: http://github.com/nwa-catch-me-if-you-can-project/relfinder-api
 
 ### Development setup
 
