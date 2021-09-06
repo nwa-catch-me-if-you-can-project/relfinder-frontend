@@ -73,13 +73,20 @@
                 <d3-network
                     v-if="graphVisible"
                     class="rel-network"
-                    ref="relationship-network"
+                    ref="relationshipNetwork"
                     :net-nodes="this.graph.nodes"
                     :net-links="this.graph.displayedLinks"
                     :options="graphOptions"
                     :link-cb="customizeLink"
                     @node-click="getEntityDataProperties" />
             </div>
+
+            <b-button
+                type="is-primary"
+                id="screenshot-button"
+                @click="takeScreenshot">
+                Screenshot
+            </b-button>
         </div>
     </div>
 </template>
@@ -147,6 +154,16 @@ export default {
         }
     },
     methods: {
+        takeScreenshot () {
+            let timestamp = Math.floor(Date.now() / 1000);
+
+            this.$refs.relationshipNetwork.screenShot(
+                `relfinder-${timestamp}.png`,
+                "#FFFFFF",
+                false,
+                true
+            );
+        },
         resetFilters () {
             this.selectedEntityTags = [];
             this.graph.nodes = [];
@@ -216,8 +233,10 @@ export default {
 
             for (let i = 0; i < selectedEntityTags.length; i++) {
                 // Extract the last string between parenthesis in the tag name
-                let parenthesisMatches = selectedEntityTags[i].match(/\(([^)]+)\)/)
-                let entityId = parenthesisMatches[parenthesisMatches.length - 1];
+                const parenthesisMatches = [...selectedEntityTags[i].matchAll(/\(([^)]+)\)/g)];
+                const matchesArray = parenthesisMatches[parenthesisMatches.length - 1];
+
+                let entityId = matchesArray[matchesArray.length - 1];
 
                 // Add the IRI prefix if not present yet
                 let iri = `${process.env.VUE_APP_KG_PREFIX}${entityId}`
@@ -378,6 +397,13 @@ export default {
 
 .panel-block {
     padding: 16px;
+}
+
+#screenshot-button {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    font-size: 20px;
 }
 
 </style>
