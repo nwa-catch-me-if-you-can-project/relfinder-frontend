@@ -26,10 +26,10 @@
                         <p>
                             Data properties of entity
                             <b>{{ selectedEntity.label }}</b>
-                            of class
+                            <!--of class
                             <b>{{ selectedEntity.class }}</b>
                             with IRI
-                            <b>{{ selectedEntity.iri }}</b>
+                            <b>{{ selectedEntity.iri }}</b>-->
                         </p>
 
                         <br/>
