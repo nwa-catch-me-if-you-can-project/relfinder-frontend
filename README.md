@@ -1,5 +1,7 @@
 # RelFinder frontend
 
+![Relfinder screenshot](/img/relfinder.png)
+
 Relfinder is a tool for calculating and visualising paths between entities (nodes) in an RDF Knowledge Graph (or SPARQL endpoint). It is based on the original Relfinder tool developed by Philipp Heim, Steffen Lohmann, Timo Stegemann and others. For more information about the tool and its features, please see: http://www.visualdataweb.org/relfinder.php.
 
 The Relfinder source code in this repository is a `Vue.js` porting of some features of the frontend of the original Relfinder which was developed in Adobe Flash / Flex. We have also developed a backend for this tool here using Python `Flask`: https://github.com/nwa-catch-me-if-you-can-project/relfinder-api
